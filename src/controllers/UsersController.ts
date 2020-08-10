@@ -73,4 +73,28 @@ export default class UsersController {
                 return response.status(500).send({ err })
             })
     }
+
+    async update(request: Request, response: Response) {
+        const { name, email, avatar, whatsapp, bio } = request.body
+        const { id } = request.params
+        if (!id) return response.status(400).send()
+
+        if (!name && !email && !avatar && !whatsapp && !bio) return response.status(400).send()
+
+        db('users')
+            .where('id', '=', id)
+            .update({ name, email, avatar, whatsapp, bio })
+            .then(id => {
+                return response.send({ 
+                    token: generateToken({ 
+                        id: id, 
+                        name, 
+                        email
+                    })
+                })
+            })
+            .catch(err => {
+                return response.status(500).send({ err })
+            })
+    }
 }
