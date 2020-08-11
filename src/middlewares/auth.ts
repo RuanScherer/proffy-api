@@ -9,7 +9,7 @@ module.exports = (request: Request, response: Response, next: NextFunction) => {
 
     try {
         const payload = jwt.verify(authHeader, authConfig.appKey)
-        request.headers.sessionUser = payload as string
+        request.body.sessionUser = payload
         next()
     }
     catch (err) {

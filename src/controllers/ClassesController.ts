@@ -19,7 +19,6 @@ export default class ClassesController {
         }
 
         const timeInMinutes = convertHourToMinutes(time as string)
-        console.log(timeInMinutes)
 
         const classes = await db('classes')
             .whereExists(function() {
@@ -39,12 +38,6 @@ export default class ClassesController {
 
     async create(request: Request, response: Response) {
         const { 
-            name, 
-            email,
-            password,
-            avatar, 
-            whatsapp, 
-            bio, 
             subject, 
             cost, 
             schedule
@@ -53,19 +46,10 @@ export default class ClassesController {
         const trx = await db.transaction()
     
         try {
-            const insertedUsersIds = await trx('users').insert({
-                name,
-                email,
-                password,
-                avatar,
-                whatsapp,
-                bio
-            })
-        
             const insertedClassesIds = await trx('classes').insert({
                 subject,
                 cost,
-                user_id: insertedUsersIds[0]
+                user_id: request.body.sessionUser.id
             })
         
             const classSchedule = schedule.map((scheduleItem: ScheduleItem) => {
