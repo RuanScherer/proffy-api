@@ -10,9 +10,9 @@ interface ScheduleItem {
 
 export default class ClassesController {
     async index(request: Request, response: Response) {
-        const { subject, week_day, time } = request.query
+        const { subject, week_day, time, page } = request.query
 
-        if(!subject || !week_day || !time) {
+        if(!subject || !week_day || !time || !page || page == 0) {
             return response.status(400).json({
                 error: "Missing filters to search classes"
             })
@@ -20,7 +20,7 @@ export default class ClassesController {
 
         const timeInMinutes = convertHourToMinutes(time as string)
 
-        const classes = await db('classes')
+        let classes = await db('classes')
             .whereExists(function() {
                 this.select('class_schedule.*')
                     .from('class_schedule')
@@ -33,7 +33,16 @@ export default class ClassesController {
             .join('users', 'classes.user_id', '=', 'users.id')
             .select(['classes.*', 'users.*'])
 
-        return response.json(classes)
+        if (classes) {
+            let lastItemIndex = page * 3
+            let firstItemIndex = lastItemIndex - 3
+            return response.json({
+                classes: classes.slice(firstItemIndex, lastItemIndex),
+                total: classes.length,
+                pages: Math.ceil(classes.length / 3)
+            })
+        }
+        return response.status(400).send()
     }
 
     async create(request: Request, response: Response) {
