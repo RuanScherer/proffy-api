@@ -12,7 +12,7 @@ export default class ClassesController {
     async index(request: Request, response: Response) {
         const { subject, week_day, time, page } = request.query
 
-        if(!subject || !week_day || !time || !page || page == 0) {
+        if(!subject || !week_day || !time) {
             return response.status(400).json({
                 error: "Missing filters to search classes"
             })
@@ -34,13 +34,16 @@ export default class ClassesController {
             .select(['classes.*', 'users.*'])
 
         if (classes) {
-            let lastItemIndex = page * 3
-            let firstItemIndex = lastItemIndex - 3
-            return response.json({
-                classes: classes.slice(firstItemIndex, lastItemIndex),
-                total: classes.length,
-                pages: Math.ceil(classes.length / 3)
-            })
+            if (page) {
+                let lastItemIndex = parseInt(page as string) * 3
+                let firstItemIndex = lastItemIndex - 3
+                return response.json({
+                    classes: classes.slice(firstItemIndex, lastItemIndex),
+                    total: classes.length,
+                    pages: Math.ceil(classes.length / 3)
+                })
+            }
+            return response.json({ classes })
         }
         return response.status(400).send()
     }
