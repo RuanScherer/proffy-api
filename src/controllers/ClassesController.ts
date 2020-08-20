@@ -10,7 +10,7 @@ interface ScheduleItem {
 
 export default class ClassesController {
     async index(request: Request, response: Response) {
-        const { subject, week_day, time } = request.query
+        const { subject, week_day, time, page } = request.query
 
         if(!subject || !week_day || !time) {
             return response.status(400).json({
@@ -19,9 +19,8 @@ export default class ClassesController {
         }
 
         const timeInMinutes = convertHourToMinutes(time as string)
-        console.log(timeInMinutes)
 
-        const classes = await db('classes')
+        let classes = await db('classes')
             .whereExists(function() {
                 this.select('class_schedule.*')
                     .from('class_schedule')
@@ -34,15 +33,23 @@ export default class ClassesController {
             .join('users', 'classes.user_id', '=', 'users.id')
             .select(['classes.*', 'users.*'])
 
-        return response.json(classes)
+        if (classes) {
+            if (page) {
+                let lastItemIndex = parseInt(page as string) * 3
+                let firstItemIndex = lastItemIndex - 3
+                return response.json({
+                    classes: classes.slice(firstItemIndex, lastItemIndex),
+                    total: classes.length,
+                    pages: Math.ceil(classes.length / 3)
+                })
+            }
+            return response.json({ classes })
+        }
+        return response.status(400).send()
     }
 
     async create(request: Request, response: Response) {
         const { 
-            name, 
-            avatar, 
-            whatsapp, 
-            bio, 
             subject, 
             cost, 
             schedule
@@ -51,17 +58,10 @@ export default class ClassesController {
         const trx = await db.transaction()
     
         try {
-            const insertedUsersIds = await trx('users').insert({
-                name,
-                avatar,
-                whatsapp,
-                bio
-            })
-        
             const insertedClassesIds = await trx('classes').insert({
                 subject,
                 cost,
-                user_id: insertedUsersIds[0]
+                user_id: request.body.sessionUser.id
             })
         
             const classSchedule = schedule.map((scheduleItem: ScheduleItem) => {
